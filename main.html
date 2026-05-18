@@ -96,6 +96,26 @@ body {
 .prog-bar-fill.purple { background:var(--accent); }
 .prog-bar-fill.orange { background:var(--orange); }
 
+/* COMPARE */
+.compare-section { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px; }
+.compare-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px; }
+.compare-col { background:var(--surface2); border-radius:12px; padding:16px; }
+.compare-col h3 { font-size:14px; font-weight:600; margin-bottom:12px; text-align:center; padding-bottom:8px; border-bottom:1px solid var(--border); }
+.compare-col.you h3 { color:var(--accent2); }
+.compare-col.friend h3 { color:var(--green); }
+.compare-stat { display:flex; justify-content:space-between; padding:6px 0; font-size:13px; }
+.compare-stat .val { font-weight:600; }
+.compare-stat .val.win { color:var(--green); }
+.compare-stat .val.lose { color:var(--text2); }
+.import-area { border:2px dashed var(--border); border-radius:12px; padding:24px; text-align:center; margin-top:16px; cursor:pointer; transition:all 0.2s; }
+.import-area:hover { border-color:var(--accent); background:rgba(108,92,231,0.05); }
+.import-area.dragover { border-color:var(--accent); background:rgba(108,92,231,0.1); }
+.import-btn { background:var(--accent); color:#fff; border:none; padding:10px 24px; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; transition:all 0.2s; }
+.import-btn:hover { background:var(--accent2); }
+.export-btn { background:transparent; color:var(--text2); border:1px solid var(--border); padding:10px 24px; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; transition:all 0.2s; }
+.export-btn:hover { border-color:var(--text2); color:var(--text); }
+.compare-empty { color:var(--text2); font-size:13px; padding:12px 0; }
+
 /* TOPICS */
 .topics-section { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px; margin-top:16px; }
 .topics-tabs { display:flex; gap:4px; margin-bottom:12px; flex-wrap:wrap; }
@@ -172,7 +192,8 @@ function todayStr() { const d=new Date(); return `${d.getFullYear()}-${String(d.
 
 function getRotation(dateStr) {
   const dn = dayNum(dateStr);
-  if (dn < 1 || dn > 226) return null;
+  if (dn > 226) return null;
+  if (dn < 1) return ROTATION[0];
   return ROTATION[(dn-1) % 5];
 }
 
@@ -184,6 +205,7 @@ function initDayData(dateStr) {
   if (!all[dateStr]) {
     const rot = getRotation(dateStr);
     if (!rot) return null;
+    const isPreview = dayNum(dateStr) < 1;
     all[dateStr] = {
       blocks: rot.map((s,i) => ({
         subject: s,
@@ -192,7 +214,8 @@ function initDayData(dateStr) {
         tasks: SUB_TASKS.map(() => false)
       })),
       extra: { M:false, P:false, PC:false, OC:false, IC:false },
-      note: ''
+      note: '',
+      preview: isPreview
     };
     save('days',all);
   }
@@ -236,7 +259,7 @@ function render() {
     else break;
   }
   
-  const dayCount = Math.min(dn, 226);
+  const dayCount = Math.max(0, Math.min(dn, 226));
   const pct = dayCount > 0 ? Math.round((doneBlocks / (dayCount*4)) * 100) : 0;
   const blockPct = totalBlocks > 0 ? Math.round((doneBlocks/totalBlocks)*100) : 0;
   
@@ -244,7 +267,7 @@ function render() {
     <div class="header">
       <h1><span>JEE</span> Tracker</h1>
       <div class="header-right">
-        <span class="day-badge">Day ${dn}/226</span>
+        <span class="day-badge">${dn < 1 ? 'Preview' : 'Day '+dn+'/226'}</span>
         <span class="streak-badge" style="display:${streak>0?'flex':'none'}">${streak}🔥</span>
       </div>
     </div>
@@ -253,11 +276,13 @@ function render() {
       <div class="nav-btn ${state.view==='today'?'active':''}" onclick="switchView('today')">Today</div>
       <div class="nav-btn ${state.view==='progress'?'active':''}" onclick="switchView('progress')">Progress</div>
       <div class="nav-btn ${state.view==='syllabus'?'active':''}" onclick="switchView('syllabus')">Syllabus</div>
+      <div class="nav-btn ${state.view==='compare'?'active':''}" onclick="switchView('compare')">Compare</div>
     </div>
 
     ${state.view === 'today' ? renderToday(date, dn, rot, dayData) : ''}
     ${state.view === 'progress' ? renderProgress(pct, blockPct, doneBlocks, totalBlocks, streak, dayCount, allDays) : ''}
     ${state.view === 'syllabus' ? renderSyllabus() : ''}
+    ${state.view === 'compare' ? renderCompare(dn) : ''}
   `;
 }
 
@@ -267,12 +292,17 @@ function renderToday(date, dn, rot, dayData) {
   let d = new Date(date);
   const dateDisplay = d.toLocaleDateString('en-US', { weekday:'short', month:'long', day:'numeric' });
   const allDone = dayData.blocks.every(b => b.done);
+  const isPreview = dayData.preview;
   
   return `
+    ${isPreview ? `<div style="background:linear-gradient(135deg,rgba(108,92,231,0.15),rgba(162,155,254,0.1));border:1px solid var(--accent);border-radius:12px;padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:13px">🚀 <strong>Starts May 20</strong> — showing Day 1 preview</span>
+      <span style="font-size:12px;color:var(--text2)">${226 - 2} days to go</span>
+    </div>` : ''}
     <div class="today-card">
       <div class="today-header">
         <h2>${dateDisplay}</h2>
-        <span style="color:${allDone?'var(--green)':'var(--text2)'};font-size:13px;font-weight:500">${allDone ? '✓ Complete' : 'In progress'}</span>
+        <span style="color:${allDone?'var(--green)':'var(--text2)'};font-size:13px;font-weight:500">${isPreview ? 'Preview' : (allDone ? '✓ Complete' : 'In progress')}</span>
       </div>
       <div class="subject-row">
         ${rot.map(s => `<span class="subject-tag ${dayData.blocks.find(b=>b.subject===s)?.done?'done':'active'}">${SUBJ_FULL[s]}</span>`).join('')}
@@ -379,7 +409,7 @@ function renderProgress(pct, blockPct, done, total, streak, days, allDays) {
           <div class="prog-bar"><div class="prog-bar-fill orange" style="width:${Math.round((days/226)*100)}%"></div></div>
         </div>
         <div class="prog-item">
-          <div class="label">Day ${days} of 226</div>
+          <div class="label">${days < 1 ? 'Prep Phase' : 'Day '+days+' of 226'}</div>
           <div class="value">${pct}%</div>
           <div class="prog-bar"><div class="prog-bar-fill green" style="width:${pct}%"></div></div>
         </div>
@@ -403,6 +433,89 @@ function renderProgress(pct, blockPct, done, total, streak, days, allDays) {
   `;
 }
 
+function calcStats(data) {
+  let total=0, done=0, daysDone=0, st=0, topics={};
+  if (!data) return { total, done, pct:0, days:0, streak:0, daysDone:0, topicPct:0 };
+  const dates = Object.keys(data).sort();
+  for (let d of dates) {
+    const dd = data[d];
+    if (!dd || !dd.blocks) continue;
+    let dayAll = true;
+    for (let b of dd.blocks) {
+      total++; if (b.done) done++;
+      if (!b.done) dayAll = false;
+    }
+    if (dayAll) daysDone++;
+  }
+  for (let i=dates.length-1; i>=0; i--) {
+    const dd = data[dates[i]];
+    if (dd && dd.blocks && dd.blocks.every(b => b.done)) st++;
+    else break;
+  }
+  return {
+    total, done, pct: total>0 ? Math.round(done/total*100) : 0,
+    days: dates.length, streak: st, daysDone
+  };
+}
+
+function renderCompare(dn) {
+  const myData = load('days',{});
+  const friendData = load('friend',null);
+  const me = calcStats(myData);
+  const friend = friendData ? calcStats(friendData) : null;
+  const myTopics = load('topics',{});
+  const friendTopics = friendData ? load('friend_topics',{}) : null;
+
+  let myTopicCount = 0, myTopicDone = 0, frTopicCount = 0, frTopicDone = 0;
+  for (let s of Object.keys(SYLLABUS)) {
+    if (myTopics[s]) myTopicDone += myTopics[s].length;
+    myTopicCount += SYLLABUS[s].length;
+    if (friendTopics && friendTopics[s]) frTopicDone += friendTopics[s].length;
+    if (friendTopics) frTopicCount += SYLLABUS[s].length;
+  }
+
+  return `
+    <div class="compare-section">
+      <div class="section-title" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Compare</span>
+        <div style="display:flex;gap:8px">
+          <button class="export-btn" onclick="exportData()">⬇ Export</button>
+        </div>
+      </div>
+
+      <div class="compare-grid">
+        <div class="compare-col you">
+          <h3>You</h3>
+          <div class="compare-stat"><span>Blocks done</span><span class="val">${me.done}/${me.total}</span></div>
+          <div class="compare-stat"><span>Completion</span><span class="val">${me.pct}%</span></div>
+          <div class="compare-stat"><span>Days active</span><span class="val">${me.days}</span></div>
+          <div class="compare-stat"><span>Streak</span><span class="val">${me.streak}d</span></div>
+          <div class="compare-stat"><span>Days all done</span><span class="val">${me.daysDone}</span></div>
+          <div class="compare-stat"><span>Topics done</span><span class="val">${myTopicDone}/${myTopicCount}</span></div>
+        </div>
+
+        <div class="compare-col friend">
+          <h3>${friend ? 'Friend' : 'Friend'}</h3>
+          ${friend ? `
+            <div class="compare-stat"><span>Blocks done</span><span class="val ${friend.done > me.done ? 'win' : 'lose'}">${friend.done}/${friend.total}</span></div>
+            <div class="compare-stat"><span>Completion</span><span class="val ${friend.pct > me.pct ? 'win' : 'lose'}">${friend.pct}%</span></div>
+            <div class="compare-stat"><span>Days active</span><span class="val ${friend.days > me.days ? 'win' : 'lose'}">${friend.days}</span></div>
+            <div class="compare-stat"><span>Streak</span><span class="val ${friend.streak > me.streak ? 'win' : 'lose'}">${friend.streak}d</span></div>
+            <div class="compare-stat"><span>Days all done</span><span class="val ${friend.daysDone > me.daysDone ? 'win' : 'lose'}">${friend.daysDone}</span></div>
+            <div class="compare-stat"><span>Topics done</span><span class="val ${frTopicDone > myTopicDone ? 'win' : 'lose'}">${frTopicDone}/${frTopicCount}</span></div>
+          ` : '<div class="compare-empty">Import your friend\'s data to compare</div>'}
+        </div>
+      </div>
+
+      <div class="import-area" id="importArea" onclick="document.getElementById('fileInput').click()">
+        <input type="file" id="fileInput" accept=".json" style="display:none" onchange="importData(event)">
+        <div style="font-size:28px;margin-bottom:8px">📁</div>
+        <div style="font-size:14px;font-weight:500;margin-bottom:4px">Import friend's data</div>
+        <div style="font-size:12px;color:var(--text2)">Drop a .json file or click to browse</div>
+      </div>
+    </div>
+  `;
+}
 function renderSyllabus() {
   const topics = SYLLABUS[state.topicFilter] || [];
   const doneTopics = load('topics',{});
@@ -497,6 +610,65 @@ window.toggleTopic = function(subj, topic) {
   save('topics', doneTopics);
   render();
 };
+
+// EXPORT / IMPORT
+window.exportData = function() {
+  const data = {
+    days: load('days',{}),
+    topics: load('topics',{}),
+    exportedAt: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type:'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'jee-progress.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+};
+
+window.importData = function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(event) {
+    try {
+      const data = JSON.parse(event.target.result);
+      if (!data.days && !data.topics) {
+        alert('Invalid file — missing progress data');
+        return;
+      }
+      save('friend', data.days || {});
+      save('friend_topics', data.topics || {});
+      render();
+      document.getElementById('fileInput').value = '';
+    } catch(err) {
+      alert('Could not read file. Make sure it\'s a valid .json export.');
+    }
+  };
+  reader.readAsText(file);
+};
+
+// Drag and drop support
+document.addEventListener('DOMContentLoaded', function() {
+  const area = document.getElementById('importArea');
+  if (!area) return;
+  area.addEventListener('dragover', function(e) {
+    e.preventDefault(); this.classList.add('dragover');
+  });
+  area.addEventListener('dragleave', function() {
+    this.classList.remove('dragover');
+  });
+  area.addEventListener('drop', function(e) {
+    e.preventDefault(); this.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file && file.name.endsWith('.json')) {
+      const input = document.getElementById('fileInput');
+      const dt = new DataTransfer(); dt.items.add(file);
+      input.files = dt.files;
+      window.importData({ target: { files: [file] } });
+    }
+  });
+});
 
 // INIT
 render();
