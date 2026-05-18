@@ -192,8 +192,7 @@ function todayStr() { const d=new Date(); return `${d.getFullYear()}-${String(d.
 
 function getRotation(dateStr) {
   const dn = dayNum(dateStr);
-  if (dn > 226) return null;
-  if (dn < 1) return ROTATION[0];
+  if (dn < 1 || dn > 226) return null;
   return ROTATION[(dn-1) % 5];
 }
 
@@ -205,7 +204,6 @@ function initDayData(dateStr) {
   if (!all[dateStr]) {
     const rot = getRotation(dateStr);
     if (!rot) return null;
-    const isPreview = dayNum(dateStr) < 1;
     all[dateStr] = {
       blocks: rot.map((s,i) => ({
         subject: s,
@@ -214,8 +212,7 @@ function initDayData(dateStr) {
         tasks: SUB_TASKS.map(() => false)
       })),
       extra: { M:false, P:false, PC:false, OC:false, IC:false },
-      note: '',
-      preview: isPreview
+      note: ''
     };
     save('days',all);
   }
@@ -259,7 +256,7 @@ function render() {
     else break;
   }
   
-  const dayCount = Math.max(0, Math.min(dn, 226));
+  const dayCount = Math.min(dn, 226);
   const pct = dayCount > 0 ? Math.round((doneBlocks / (dayCount*4)) * 100) : 0;
   const blockPct = totalBlocks > 0 ? Math.round((doneBlocks/totalBlocks)*100) : 0;
   
@@ -267,7 +264,7 @@ function render() {
     <div class="header">
       <h1><span>JEE</span> Tracker</h1>
       <div class="header-right">
-        <span class="day-badge">${dn < 1 ? 'Preview' : 'Day '+dn+'/226'}</span>
+        <span class="day-badge">Day ${dn}/226</span>
         <span class="streak-badge" style="display:${streak>0?'flex':'none'}">${streak}🔥</span>
       </div>
     </div>
@@ -292,17 +289,12 @@ function renderToday(date, dn, rot, dayData) {
   let d = new Date(date);
   const dateDisplay = d.toLocaleDateString('en-US', { weekday:'short', month:'long', day:'numeric' });
   const allDone = dayData.blocks.every(b => b.done);
-  const isPreview = dayData.preview;
   
   return `
-    ${isPreview ? `<div style="background:linear-gradient(135deg,rgba(108,92,231,0.15),rgba(162,155,254,0.1));border:1px solid var(--accent);border-radius:12px;padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
-      <span style="font-size:13px">🚀 <strong>Starts May 20</strong> — showing Day 1 preview</span>
-      <span style="font-size:12px;color:var(--text2)">${226 - 2} days to go</span>
-    </div>` : ''}
     <div class="today-card">
       <div class="today-header">
         <h2>${dateDisplay}</h2>
-        <span style="color:${allDone?'var(--green)':'var(--text2)'};font-size:13px;font-weight:500">${isPreview ? 'Preview' : (allDone ? '✓ Complete' : 'In progress')}</span>
+        <span style="color:${allDone?'var(--green)':'var(--text2)'};font-size:13px;font-weight:500">${allDone ? '✓ Complete' : 'In progress'}</span>
       </div>
       <div class="subject-row">
         ${rot.map(s => `<span class="subject-tag ${dayData.blocks.find(b=>b.subject===s)?.done?'done':'active'}">${SUBJ_FULL[s]}</span>`).join('')}
@@ -409,7 +401,7 @@ function renderProgress(pct, blockPct, done, total, streak, days, allDays) {
           <div class="prog-bar"><div class="prog-bar-fill orange" style="width:${Math.round((days/226)*100)}%"></div></div>
         </div>
         <div class="prog-item">
-          <div class="label">${days < 1 ? 'Prep Phase' : 'Day '+days+' of 226'}</div>
+          <div class="label">Day ${days} of 226</div>
           <div class="value">${pct}%</div>
           <div class="prog-bar"><div class="prog-bar-fill green" style="width:${pct}%"></div></div>
         </div>
