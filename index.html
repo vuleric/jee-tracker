@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JEE Tracker</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #0a0a0f;
+  color: #e0e0e8;
+  min-height: 100vh;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:20px;
+}
+.card {
+  background: #12121a; border:1px solid #2a2a3e; border-radius:20px;
+  padding:40px; max-width:480px; width:100%; text-align:center;
+}
+h1 { font-size:28px; font-weight:800; margin-bottom:8px; letter-spacing:-1px; }
+h1 span { color:#a29bfe; }
+.sub { color:#8888a0; font-size:14px; margin-bottom:32px; }
+.btns { display:flex; flex-direction:column; gap:12px; margin-bottom:24px; }
+.btn {
+  display:block; padding:16px 24px; border-radius:14px;
+  font-size:16px; font-weight:600; text-decoration:none;
+  transition:all 0.2s; border:1px solid #2a2a3e;
+}
+.btn-primary { background:#6c5ce7; color:#fff; border-color:#6c5ce7; }
+.btn-primary:hover { background:#7c6df7; transform:translateY(-1px); }
+.btn-secondary { background:#12121a; color:#e0e0e8; }
+.btn-secondary:hover { background:#1a1a28; border-color:#6c5ce7; }
+.info { font-size:12px; color:#666680; line-height:1.6; }
+.badge {
+  display:inline-block; padding:4px 12px; border-radius:20px;
+  font-size:11px; font-weight:600; margin-bottom:16px;
+}
+.badge-green { background:rgba(0,184,148,0.15); color:#00b894; }
+.badge-purple { background:rgba(108,92,231,0.15); color:#a29bfe; }
+.footer { margin-top:20px; font-size:12px; color:#444; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div id="badge" class="badge"></div>
+  <h1><span>JEE</span> Tracker</h1>
+  <p class="sub">May 20 – Dec 31 · 226 days</p>
+  <div class="btns">
+    <a href="preview.html" class="btn btn-primary">Launch Tracker</a>
+    <a href="main.html" class="btn btn-secondary">Strict Mode (unlocks May 20)</a>
+  </div>
+  <p class="info">
+    Auto-saves in your browser.<br>
+    Data stays on your device.
+  </p>
+</div>
+<div class="footer">Built for JEE 2026</div>
+<script>
+  const now = new Date();
+  const start = new Date(2026, 4, 20);
+  const daysLeft = Math.ceil((start - now) / 86400000);
+  const badge = document.getElementById('badge');
+  if (daysLeft > 0) {
+    badge.className = 'badge badge-purple';
+    badge.textContent = '🚀 Starts in ' + daysLeft + ' days';
+  } else {
+    badge.className = 'badge badge-green';
+    badge.textContent = '✅ Session is live';
+  }
+</script>
+</body>
+</html>

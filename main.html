@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JEE Tracker</title>
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #12121a;
+  --surface2: #1a1a28;
+  --border: #2a2a3e;
+  --text: #e0e0e8;
+  --text2: #8888a0;
+  --accent: #6c5ce7;
+  --accent2: #a29bfe;
+  --green: #00b894;
+  --red: #e17055;
+  --orange: #fdcb6e;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+}
+.app {
+  width: 100%;
+  max-width: 800px;
+}
+
+/* HEADER */
+.header { display:flex; justify-content:space-between; align-items:center; padding:16px 0; border-bottom:1px solid var(--border); margin-bottom:20px; }
+.header h1 { font-size:20px; font-weight:700; letter-spacing:-0.5px; }
+.header h1 span { color:var(--accent2); }
+.header-right { display:flex; gap:8px; align-items:center; }
+.day-badge { background:var(--accent); color:#fff; font-size:12px; font-weight:600; padding:4px 12px; border-radius:20px; }
+.streak-badge { background:var(--green); color:#fff; font-size:12px; font-weight:600; padding:4px 12px; border-radius:20px; display:none; }
+
+/* TODAY CARD */
+.today-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px; margin-bottom:16px; }
+.today-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+.today-header h2 { font-size:16px; font-weight:600; }
+.today-date { color:var(--text2); font-size:13px; }
+.subject-row { display:flex; gap:8px; margin-bottom:12px; }
+.subject-tag { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:8px 16px; font-size:13px; font-weight:500; cursor:default; }
+.subject-tag.active { border-color:var(--accent); background:rgba(108,92,231,0.1); color:var(--accent2); }
+.subject-tag.done { border-color:var(--green); background:rgba(0,184,148,0.1); color:var(--green); }
+
+/* BLOCKS */
+.blocks { display:flex; flex-direction:column; gap:12px; margin-bottom:16px; }
+.block { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; transition:border-color 0.2s; }
+.block.done-block { border-color:var(--green); }
+.block-header { display:flex; justify-content:space-between; align-items:center; padding:14px 16px; cursor:pointer; user-select:none; }
+.block-header-left { display:flex; align-items:center; gap:12px; }
+.block-check { width:20px; height:20px; border:2px solid var(--border); border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:11px; transition:all 0.2s; flex-shrink:0; }
+.block-check.checked { background:var(--green); border-color:var(--green); color:#fff; }
+.block-number { font-size:11px; font-weight:600; color:var(--text2); min-width:42px; }
+.block-subject { font-size:14px; font-weight:600; }
+.block-status { font-size:12px; color:var(--text2); }
+.toggle-icon { color:var(--text2); font-size:14px; transition:transform 0.2s; }
+.block.open .toggle-icon { transform:rotate(180deg); }
+
+/* SUB TASKS */
+.sub-tasks { padding:0 16px 16px; display:none; }
+.block.open .sub-tasks { display:block; }
+.sub-task { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); cursor:pointer; }
+.sub-task:last-child { border-bottom:none; }
+.sub-task input[type="checkbox"] { display:none; }
+.sub-task .cb { width:16px; height:16px; border:2px solid var(--border); border-radius:4px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:9px; transition:all 0.2s; }
+.sub-task .cb.checked { background:var(--green); border-color:var(--green); color:#fff; }
+.sub-task .label { font-size:13px; flex:1; }
+.sub-task .cb.checked + .label { text-decoration:line-through; color:var(--text2); }
+
+/* EXTRA BLOCK */
+.extra-subjects { display:flex; flex-wrap:wrap; gap:8px; padding:0 16px 16px; }
+.extra-subj { display:flex; align-items:center; gap:8px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:6px 12px; cursor:pointer; font-size:13px; transition:all 0.2s; }
+.extra-subj .cb { width:14px; height:14px; border:2px solid var(--border); border-radius:3px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:8px; transition:all 0.2s; }
+.extra-subj .cb.checked { background:var(--green); border-color:var(--green); color:#fff; }
+.extra-subj.done .cb.checked + span { text-decoration:line-through; color:var(--text2); }
+
+/* PROGRESS */
+.progress-section { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px; }
+.section-title { font-size:15px; font-weight:600; margin-bottom:16px; }
+.progress-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.prog-item { background:var(--surface2); border-radius:10px; padding:12px; }
+.prog-item .label { font-size:11px; color:var(--text2); margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px; }
+.prog-item .value { font-size:20px; font-weight:700; }
+.prog-bar { height:4px; background:var(--border); border-radius:2px; margin-top:8px; overflow:hidden; }
+.prog-bar-fill { height:100%; border-radius:2px; transition:width 0.3s; }
+.prog-bar-fill.green { background:var(--green); }
+.prog-bar-fill.purple { background:var(--accent); }
+.prog-bar-fill.orange { background:var(--orange); }
+
+/* TOPICS */
+.topics-section { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px; margin-top:16px; }
+.topics-tabs { display:flex; gap:4px; margin-bottom:12px; flex-wrap:wrap; }
+.topics-tab { padding:6px 14px; font-size:12px; border-radius:20px; border:1px solid var(--border); background:transparent; color:var(--text2); cursor:pointer; transition:all 0.2s; }
+.topics-tab.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+.topic-list { display:flex; flex-direction:column; gap:4px; max-height:300px; overflow-y:auto; }
+.topic-list::-webkit-scrollbar { width:4px; }
+.topic-list::-webkit-scrollbar-track { background:transparent; }
+.topic-list::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+.topic-item { display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:6px; cursor:pointer; transition:background 0.15s; font-size:13px; }
+.topic-item:hover { background:var(--surface2); }
+.topic-item .cb { width:14px; height:14px; border:2px solid var(--border); border-radius:3px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:8px; transition:all 0.2s; }
+.topic-item .cb.checked { background:var(--green); border-color:var(--green); color:#fff; }
+.topic-item .cb.checked + span { text-decoration:line-through; color:var(--text2); }
+
+/* NAV */
+.nav { display:flex; gap:8px; margin-bottom:16px; }
+.nav-btn { flex:1; padding:10px; text-align:center; border-radius:10px; border:1px solid var(--border); background:var(--surface); color:var(--text2); cursor:pointer; font-size:13px; font-weight:500; transition:all 0.2s; }
+.nav-btn.active { border-color:var(--accent); color:var(--accent2); background:rgba(108,92,231,0.1); }
+
+/* RESPONSIVE */
+@media (max-width:600px) {
+  body { padding:12px; }
+  .progress-grid { grid-template-columns:1fr; }
+  .subject-row { flex-wrap:wrap; }
+}
+
+@keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+.block { animation:fadeIn 0.3s ease; }
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<script>
+// DATA
+const SUBJECTS = {
+  M: 'Math',
+  P: 'Physics',
+  PC: 'P-Chem',
+  OC: 'O-Chem',
+  IC: 'I-Chem'
+};
+const SUBJ_FULL = {
+  M: 'Mathematics',
+  P: 'Physics',
+  PC: 'Physical Chemistry',
+  OC: 'Organic Chemistry',
+  IC: 'Inorganic Chemistry'
+};
+const ROTATION = [
+  ['M','P','OC'],
+  ['PC','IC','M'],
+  ['P','OC','PC'],
+  ['IC','M','P'],
+  ['OC','PC','IC']
+];
+const SUB_TASKS = ['Revise last class','Class Q again','HW','Self practice'];
+
+const SYLLABUS = {
+  Mathematics: ['Quadratic Eq','Complex Nos','Seq & Series','Binomial Thm','P&C','Probability','Matrices','Determinants','Sets & Relations','Limits','Continuity','Differentiation','App of Derivatives','Indefinite Integral','Definite Integral','Area under Curves','Diff Equations','Trig Eqs','Straight Lines','Circles','Parabola','Ellipse','Hyperbola','Vectors','3D Geometry'],
+  Physics: ['Units & Errors','Motion 1D','Motion 2D','NLM','Friction','Work-Energy','COM','Rotation','Gravitation','SHM','Elasticity','Fluids','KTG','Thermodynamics','Calorimetry','Waves','Sound','Electrostatics','Capacitors','Current Electricity','Magnetism','EMI','AC','Ray Optics','Wave Optics','Modern Physics','Nuclear','Semiconductors'],
+  'P-Chem': ['Mole Concept','Atomic Structure','Gaseous State','Thermodynamics','Thermochemistry','Chem Equilibrium','Ionic Equilibrium','Kinetics','Surface Chem','Electrochemistry','Solutions','Solid State','Nuclear Chem'],
+  'O-Chem': ['GOC','Isomerism','Mechanisms','Alkanes','Alkenes','Alkynes','Haloalkanes','Alcohols','Aldehydes','Carboxylic Acids','Amines','Aromatic','Biomolecules','Polymers','Spectroscopy','Named Reactions'],
+  'I-Chem': ['Periodic Trends','Chem Bonding','VSEPR','MOT','s-Block','p-Block Gr13-14','p-Block Gr15-16','p-Block Gr17-18','d-Block','f-Block','Coordination','Metallurgy','Qual Analysis']
+};
+
+// HELPERS
+function dayNum(dateStr) {
+  const start = new Date(2026, 4, 20);
+  const d = new Date(dateStr);
+  return Math.floor((d - start) / 86400000) + 1;
+}
+function todayStr() { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+
+function getRotation(dateStr) {
+  const dn = dayNum(dateStr);
+  if (dn < 1 || dn > 226) return null;
+  return ROTATION[(dn-1) % 5];
+}
+
+function save(k,v) { localStorage.setItem('jee_'+k, JSON.stringify(v)); }
+function load(k,def) { try { return JSON.parse(localStorage.getItem('jee_'+k)) ?? def; } catch { return def; } }
+
+function initDayData(dateStr) {
+  let all = load('days',{});
+  if (!all[dateStr]) {
+    const rot = getRotation(dateStr);
+    if (!rot) return null;
+    all[dateStr] = {
+      blocks: rot.map((s,i) => ({
+        subject: s,
+        done: false,
+        open: i===0,
+        tasks: SUB_TASKS.map(() => false)
+      })),
+      extra: { M:false, P:false, PC:false, OC:false, IC:false },
+      note: ''
+    };
+    save('days',all);
+  }
+  return all[dateStr];
+}
+
+function saveDay(dateStr, data) {
+  let all = load('days',{});
+  all[dateStr] = data;
+  save('days',all);
+}
+
+// RENDER
+let state = { view: 'today', topicFilter: 'Mathematics' };
+
+function render() {
+  const date = todayStr();
+  const dn = dayNum(date);
+  const rot = getRotation(date);
+  const dayData = initDayData(date);
+  
+  let app = document.getElementById('app');
+  
+  // Calculate stats
+  const allDays = load('days',{});
+  let totalBlocks=0, doneBlocks=0, streak=0;
+  let dates = Object.keys(allDays).sort();
+  for (let d of dates) {
+    const dd = allDays[d];
+    if (!dd) continue;
+    for (let b of dd.blocks) {
+      totalBlocks++;
+      if (b.done) doneBlocks++;
+    }
+  }
+  // streak counting backwards from today
+  for (let i=dates.length-1; i>=0; i--) {
+    const dd = allDays[dates[i]];
+    if (dd && dd.blocks.every(b => b.done)) streak++;
+    else if (dates[i] === date) continue;
+    else break;
+  }
+  
+  const dayCount = Math.min(dn, 226);
+  const pct = dayCount > 0 ? Math.round((doneBlocks / (dayCount*4)) * 100) : 0;
+  const blockPct = totalBlocks > 0 ? Math.round((doneBlocks/totalBlocks)*100) : 0;
+  
+  app.innerHTML = `
+    <div class="header">
+      <h1><span>JEE</span> Tracker</h1>
+      <div class="header-right">
+        <span class="day-badge">Day ${dn}/226</span>
+        <span class="streak-badge" style="display:${streak>0?'flex':'none'}">${streak}🔥</span>
+      </div>
+    </div>
+
+    <div class="nav">
+      <div class="nav-btn ${state.view==='today'?'active':''}" onclick="switchView('today')">Today</div>
+      <div class="nav-btn ${state.view==='progress'?'active':''}" onclick="switchView('progress')">Progress</div>
+      <div class="nav-btn ${state.view==='syllabus'?'active':''}" onclick="switchView('syllabus')">Syllabus</div>
+    </div>
+
+    ${state.view === 'today' ? renderToday(date, dn, rot, dayData) : ''}
+    ${state.view === 'progress' ? renderProgress(pct, blockPct, doneBlocks, totalBlocks, streak, dayCount, allDays) : ''}
+    ${state.view === 'syllabus' ? renderSyllabus() : ''}
+  `;
+}
+
+function renderToday(date, dn, rot, dayData) {
+  if (!rot || dn > 226) return '<div style="text-align:center;padding:40px;color:var(--text2)">JEE prep period: May 20 – Dec 31</div>';
+  
+  let d = new Date(date);
+  const dateDisplay = d.toLocaleDateString('en-US', { weekday:'short', month:'long', day:'numeric' });
+  const allDone = dayData.blocks.every(b => b.done);
+  
+  return `
+    <div class="today-card">
+      <div class="today-header">
+        <h2>${dateDisplay}</h2>
+        <span style="color:${allDone?'var(--green)':'var(--text2)'};font-size:13px;font-weight:500">${allDone ? '✓ Complete' : 'In progress'}</span>
+      </div>
+      <div class="subject-row">
+        ${rot.map(s => `<span class="subject-tag ${dayData.blocks.find(b=>b.subject===s)?.done?'done':'active'}">${SUBJ_FULL[s]}</span>`).join('')}
+      </div>
+    </div>
+
+    <div class="blocks">
+      ${dayData.blocks.map((block, i) => renderBlock(date, block, i, dayData)).join('')}
+      ${renderExtraBlock(date, dayData)}
+    </div>
+
+    ${allDone ? `<div style="text-align:center;padding:16px;background:var(--surface);border:1px solid var(--green);border-radius:12px;margin-bottom:16px;font-size:14px;color:var(--green)">All 4 blocks done. Great work. ✅</div>` : ''}
+  `;
+}
+
+function renderBlock(date, block, i, dayData) {
+  const taskDone = block.tasks.every(t => t);
+  const subj = SUBJ_FULL[block.subject];
+  return `
+    <div class="block ${block.done?'done-block':''} ${block.open?'open':''}">
+      <div class="block-header" onclick="toggleBlock('${date}', ${i})">
+        <div class="block-header-left">
+          <div class="block-check ${block.done?'checked':''}" onclick="event.stopPropagation();toggleBlockDone('${date}', ${i})">${block.done?'✓':''}</div>
+          <span class="block-number">BLOCK ${i+1}</span>
+          <span class="block-subject">${subj}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="block-status">${taskDone?'✓ tasks done':`${block.tasks.filter(t=>t).length}/${block.tasks.length}`}</span>
+          <span class="toggle-icon">▼</span>
+        </div>
+      </div>
+      <div class="sub-tasks">
+        ${block.tasks.map((t, j) => `
+          <div class="sub-task" onclick="toggleTask('${date}', ${i}, ${j})">
+            <span class="cb ${t?'checked':''}">${t?'✓':''}</span>
+            <span class="label">${SUB_TASKS[j]}</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderExtraBlock(date, dayData) {
+  const allExtra = Object.values(dayData.extra).every(v => v);
+  return `
+    <div class="block ${allExtra?'done-block':''} ${dayData.extraOpen?'open':''}">
+      <div class="block-header" onclick="toggleExtraOpen('${date}')">
+        <div class="block-header-left">
+          <div class="block-check ${allExtra?'checked':''}" onclick="event.stopPropagation();toggleExtraAll('${date}')">${allExtra?'✓':''}</div>
+          <span class="block-number">BLOCK 4</span>
+          <span class="block-subject">Full Chapter Revision</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="block-status">${Object.values(dayData.extra).filter(v=>v).length}/5</span>
+          <span class="toggle-icon">▼</span>
+        </div>
+      </div>
+      <div class="extra-subjects">
+        ${Object.entries(dayData.extra).map(([k,v]) => `
+          <div class="extra-subj ${v?'done':''}" onclick="toggleExtra('${date}', '${k}')">
+            <span class="cb ${v?'checked':''}">${v?'✓':''}</span>
+            <span>${SUBJ_FULL[k]}</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderProgress(pct, blockPct, done, total, streak, days, allDays) {
+  // week data
+  let weekData = [];
+  const dates = Object.keys(allDays).sort();
+  let weekStart = new Date(2026,4,20);
+  for (let i=0; i<35; i++) {
+    let d = new Date(weekStart);
+    d.setDate(d.getDate()+i);
+    let ds = d.toISOString().split('T')[0];
+    const dd = allDays[ds];
+    let wk = Math.floor(i/7)+1;
+    if (!weekData[wk]) weekData[wk] = [];
+    let allDone = dd && dd.blocks.every(b => b.done);
+    weekData[wk].push(allDone ? '✓' : (dd ? '·' : ''));
+  }
+
+  return `
+    <div class="progress-section">
+      <div class="section-title">Progress</div>
+      <div class="progress-grid">
+        <div class="prog-item">
+          <div class="label">Blocks Done</div>
+          <div class="value">${done}/${total}</div>
+          <div class="prog-bar"><div class="prog-bar-fill green" style="width:${blockPct}%"></div></div>
+        </div>
+        <div class="prog-item">
+          <div class="label">Streak</div>
+          <div class="value">${streak} days</div>
+          <div class="prog-bar"><div class="prog-bar-fill purple" style="width:${streak>0?Math.min(100,streak*5):0}%"></div></div>
+        </div>
+        <div class="prog-item">
+          <div class="label">Days Complete</div>
+          <div class="value">${days}/226</div>
+          <div class="prog-bar"><div class="prog-bar-fill orange" style="width:${Math.round((days/226)*100)}%"></div></div>
+        </div>
+        <div class="prog-item">
+          <div class="label">Day ${days} of 226</div>
+          <div class="value">${pct}%</div>
+          <div class="prog-bar"><div class="prog-bar-fill green" style="width:${pct}%"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="progress-section" style="margin-top:16px">
+      <div class="section-title">Weekly Overview</div>
+      ${weekData.slice(1).map((wk, i) => `
+        <div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px">
+          <span style="min-width:48px;color:var(--text2)">W${i+1}</span>
+          ${wk.map(d => `<span style="width:20px;text-align:center;color:${d==='✓'?'var(--green)':d==='·'?'var(--text2)':'var(--border)'}">${d||'○'}</span>`).join('')}
+        </div>
+      `).join('')}
+      <div style="display:flex;gap:12px;margin-top:8px;font-size:11px;color:var(--text2)">
+        <span>✓ = all 4 done</span>
+        <span>· = partial</span>
+        <span>○ = empty</span>
+      </div>
+    </div>
+  `;
+}
+
+function renderSyllabus() {
+  const topics = SYLLABUS[state.topicFilter] || [];
+  const doneTopics = load('topics',{});
+  const subjTopics = doneTopics[state.topicFilter] || [];
+  
+  return `
+    <div class="topics-section">
+      <div class="section-title">Syllabus</div>
+      <div class="topics-tabs">
+        ${Object.keys(SYLLABUS).map(s => `
+          <button class="topics-tab ${state.topicFilter===s?'active':''}" onclick="switchTopic('${s}')">${s}</button>
+        `).join('')}
+      </div>
+      <div class="topic-list">
+        ${topics.map(t => {
+          const done = subjTopics.includes(t);
+          return `
+            <div class="topic-item" onclick="toggleTopic('${state.topicFilter}', '${t}')">
+              <span class="cb ${done?'checked':''}">${done?'✓':''}</span>
+              <span>${t}</span>
+            </div>
+          `;
+        }).join('')}
+        ${topics.length === 0 ? '<div style="color:var(--text2);padding:12px">No topics yet</div>' : ''}
+      </div>
+      <div style="margin-top:12px;font-size:12px;color:var(--text2)">
+        ${subjTopics.length}/${topics.length} topics done
+      </div>
+    </div>
+  `;
+}
+
+// ACTIONS
+window.switchView = function(v) { state.view=v; render(); };
+window.switchTopic = function(s) { state.topicFilter=s; render(); };
+
+window.toggleBlock = function(date, i) {
+  let all = load('days',{});
+  if (!all[date]) return;
+  all[date].blocks[i].open = !all[date].blocks[i].open;
+  save('days',all);
+  render();
+};
+
+window.toggleBlockDone = function(date, i) {
+  let all = load('days',{});
+  if (!all[date]) return;
+  all[date].blocks[i].done = !all[date].blocks[i].done;
+  save('days',all);
+  render();
+};
+
+window.toggleTask = function(date, blockI, taskI) {
+  let all = load('days',{});
+  if (!all[date]) return;
+  all[date].blocks[blockI].tasks[taskI] = !all[date].blocks[blockI].tasks[taskI];
+  save('days',all);
+  render();
+};
+
+window.toggleExtra = function(date, subj) {
+  let all = load('days',{});
+  if (!all[date]) return;
+  all[date].extra[subj] = !all[date].extra[subj];
+  save('days',all);
+  render();
+};
+
+window.toggleExtraOpen = function(date) {
+  let all = load('days',{});
+  if (!all[date]) return;
+  all[date].extraOpen = !all[date].extraOpen;
+  save('days',all);
+  render();
+};
+
+window.toggleExtraAll = function(date) {
+  let all = load('days',{});
+  if (!all[date]) return;
+  const allDone = Object.values(all[date].extra).every(v => v);
+  for (let k in all[date].extra) all[date].extra[k] = !allDone;
+  save('days',all);
+  render();
+};
+
+window.toggleTopic = function(subj, topic) {
+  let doneTopics = load('topics',{});
+  if (!doneTopics[subj]) doneTopics[subj] = [];
+  const idx = doneTopics[subj].indexOf(topic);
+  if (idx > -1) doneTopics[subj].splice(idx, 1);
+  else doneTopics[subj].push(topic);
+  save('topics', doneTopics);
+  render();
+};
+
+// INIT
+render();
+</script>
+</body>
+</html>
